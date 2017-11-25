@@ -16,13 +16,13 @@ import cv2
 
 from utils import *
 
-def create_model(input_shape=(64, 64)):
+def create_model(activation, input_shape=(64, 64)):
     """
     Simple convnet model : one convolution, one average pooling and one fully connected layer:
     :return: Keras model
     """
     model = Sequential()
-    model.add(Conv2D(100, (11,11), padding='valid', strides=(1, 1), input_shape=(input_shape[0], input_shape[1], 1)))
+    model.add(Conv2D(100, (11,11), activation=activation, padding='valid', strides=(1, 1), input_shape=(input_shape[0], input_shape[1], 1)))
     model.add(AveragePooling2D((6,6)))
     model.add(Reshape([-1, 8100]))
     model.add(Dense(1024, activation='sigmoid', kernel_regularizer=regularizers.l2(0.0001)))
@@ -59,7 +59,7 @@ def training(m, X, Y, verbose, batch_size=16, epochs= 10, data_augm=False):
         history = m.fit(X, Y, batch_size=batch_size, epochs=epochs, verbose=verbose)
     return history
 
-def run(X_to_pred=None, verbose=0):
+def run(X_to_pred=None, verbose=0, activation=None):
     """
     Full pipeline for CNN: load the dataset, train the model and predict ROIs
     :param X_to_pred: input for predictions after training (X_train if not specified)
@@ -67,7 +67,7 @@ def run(X_to_pred=None, verbose=0):
     :return: X, X_fullsize, Y, y_pred
     """
     X, X_fullsize, Y, contour_mask = create_dataset()
-    m = create_model()
+    m = create_model(activation=activation)
     m.compile(loss='mean_squared_error',
               optimizer='adam',
               metrics=['accuracy'])
