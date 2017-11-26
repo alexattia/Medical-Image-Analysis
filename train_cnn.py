@@ -18,7 +18,8 @@ from utils import *
 
 def create_model(activation, input_shape=(64, 64)):
     """
-    Simple convnet model : one convolution, one average pooling and one fully connected layer:
+    Simple convnet model : one convolution, one average pooling and one fully connected layer
+    :param activation: None if nothing passed, e.g : ReLu, tanh, etc.
     :return: Keras model
     """
     model = Sequential()
@@ -29,10 +30,55 @@ def create_model(activation, input_shape=(64, 64)):
     model.add(Reshape([-1, 32, 32]))
     return model
 
-def training(m, X, Y, verbose, batch_size=16, epochs= 10, data_augm=False):
+def create_model_maxpooling(activation, input_shape=(64, 64)):
+    """
+    Simple convnet model with max pooling: one convolution, one max pooling and one fully connected layer
+    :param activation: None if nothing passed, e.g : ReLu, tanh, etc.
+    :return: Keras model
+    """
+    model = Sequential()
+    model.add(Conv2D(100, (11,11), activation=activation, padding='valid', strides=(1, 1), input_shape=(input_shape[0], input_shape[1], 1)))
+    model.add(MaxPooling2D((6,6)))
+    model.add(Reshape([-1, 8100]))
+    model.add(Dense(1024, activation='sigmoid', kernel_regularizer=regularizers.l2(0.0001)))
+    model.add(Reshape([-1, 32, 32]))
+    return model
+
+def create_model_larger(activation, input_shape=(64, 64)):
+    """
+    Larger (more filters) convnet model : one convolution, one average pooling and one fully connected layer:
+    :param activation: None if nothing passed, e.g : ReLu, tanh, etc. 
+    :return: Keras model
+    """
+    model = Sequential()
+    model.add(Conv2D(200, (11,11), activation=activation, padding='valid', strides=(1, 1), input_shape=(input_shape[0], input_shape[1], 1)))
+    model.add(AveragePooling2D((6,6)))
+    model.add(Reshape([-1, 16200]))
+    model.add(Dense(1024, activation='sigmoid', kernel_regularizer=regularizers.l2(0.0001)))
+    model.add(Reshape([-1, 32, 32]))
+    return model
+
+def create_model_deeper(activation, input_shape=(64, 64)):
+    """
+    Deeper convnet model : two convolutions, two average pooling and one fully connected layer:
+    :param activation: None if nothing passed, e.g : ReLu, tanh, etc.
+    :return: Keras model
+    """
+    model = Sequential()
+    model.add(Conv2D(64, (11,11), activation=activation, padding='valid', strides=(1, 1), input_shape=(input_shape[0], input_shape[1], 1)))
+    model.add(AveragePooling2D((2,2)))
+    model.add(Conv2D(128, (10, 10), activation=activation, padding='valid', strides=(1, 1)))
+    model.add(AveragePooling2D((2,2)))
+    model.add(Reshape([-1, 128*9*9]))
+    model.add(Dense(1024, activation='sigmoid', kernel_regularizer=regularizers.l2(0.0001)))
+    model.add(Reshape([-1, 32, 32]))
+    return model
+
+def training(m, X, Y, verbose, batch_size=16, epochs=10, data_augm=False):
     """
     Training CNN with the possibility to use data augmentation
     :param m: Keras model
+    :param epochs: number of epochs
     :param X: training pictures
     :param Y: training binary ROI mask
     :return: history
@@ -59,15 +105,26 @@ def training(m, X, Y, verbose, batch_size=16, epochs= 10, data_augm=False):
         history = m.fit(X, Y, batch_size=batch_size, epochs=epochs, verbose=verbose)
     return history
 
-def run(X_to_pred=None, verbose=0, activation=None):
+def run(model='simple', X_to_pred=None, history=False, verbose=0, activation=None, epochs=20):
     """
     Full pipeline for CNN: load the dataset, train the model and predict ROIs
+    :param model: choice between different models e.g simple, larger, deeper, maxpooling
+    :param activation: None if nothing passed, e.g : ReLu, tanh, etc.
+    :param epochs: number of epochs
     :param X_to_pred: input for predictions after training (X_train if not specified)
     :param verbose: int for verbose
-    :return: X, X_fullsize, Y, y_pred
+    :return: X, X_fullsize, Y, y_pred, h (if history boolean passed)
     """
     X, X_fullsize, Y, contour_mask = create_dataset()
-    m = create_model(activation=activation)
+    if model == 'simple':
+        m = create_model(activation=activation)
+    elif model == 'larger':
+        m = create_model_larger(activation=activation)
+    elif model == 'deeper':
+        m = create_model_deeper(activation=activation)
+    elif model == 'maxpooling':
+        m = create_model_maxpooling(activation=activation)
+
     m.compile(loss='mean_squared_error',
               optimizer='adam',
               metrics=['accuracy'])
@@ -75,9 +132,14 @@ def run(X_to_pred=None, verbose=0, activation=None):
         print('Size for each layer :\nLayer, Input Size, Output Size')
         for p in m.layers:
             print(p.name.title(), p.input_shape, p.output_shape)
-    h = training(m, X, Y, verbose=verbose, batch_size=16, epochs=20, data_augm=False)
+    h = training(m, X, Y, verbose=verbose, batch_size=16, epochs=epochs, data_augm=False)
 
     if not X_to_pred:
         X_to_pred = X
     y_pred = m.predict(X_to_pred, batch_size=16)
-    return X, X_fullsize, Y, contour_mask, y_pred
+    
+    if history:
+        return X, X_fullsize, Y, contour_mask, y_pred, h 
+    else:
+        return X, X_fullsize, Y, contour_mask, y_pred
+

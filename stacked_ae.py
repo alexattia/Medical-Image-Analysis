@@ -40,7 +40,7 @@ def customized_loss(y_true, y_pred, alpha=0.0001, beta=3):
     #adjust the weight between loss components
     return (alpha/2) * loss1 + beta * loss2
 
-def model1(X_train, get_history=False, verbose=0, param_reg=3*0.001):
+def model1(X_train, param_reg, get_history=False, verbose=0):
     """
     First part of the stacked AE.
     Train the AE on the ROI input images.
@@ -65,7 +65,7 @@ def model1(X_train, get_history=False, verbose=0, param_reg=3*0.001):
     else:
         return encoded_X, encoder_0
 
-def model2(encoder_0, encoded_X, X_train, get_history=False, verbose=0, param_reg=3*0.001):
+def model2(encoder_0, encoded_X, X_train, param_reg, get_history=False, verbose=0):
     """
     Second part of the stacked AE.
     :param X_train: encoder ROI image
@@ -89,8 +89,8 @@ def model2(encoder_0, encoded_X, X_train, get_history=False, verbose=0, param_re
     else:
         return encoder_1
 
-def model3(X_train, Y_train, encoder_0, encoder_1, init='zero',
-           get_history=False, verbose=0, param_reg=3*0.001):
+def model3(X_train, Y_train, encoder_0, encoder_1, init, param_reg,
+           get_history=False, verbose=0):
     """
     Last part of the stacked AE.
     :param X_train: ROI input image
@@ -109,7 +109,7 @@ def model3(X_train, Y_train, encoder_0, encoder_1, init='zero',
     else:
         return model
 
-def run(X_fullsize, y_pred, contour_mask, X_to_pred=None, verbose=0):
+def run(X_fullsize, y_pred, contour_mask, X_to_pred=None, verbose=0, param_reg=3*0.001, init_3='zero'):
     """
     Full pipeline for CNN: load the dataset, train the model and predict ROIs
     :param X_fullsize: full size training set (256x256)
@@ -119,9 +119,10 @@ def run(X_fullsize, y_pred, contour_mask, X_to_pred=None, verbose=0):
     :return: X_train, Y_train, contours_pred
     """
     X_train, Y_train = open_data_AE(X_fullsize, y_pred, contour_mask)
-    encoded_X, encoder_0 = model1(X_train)
-    encoder_1 = model2(encoder_0, encoded_X, X_train)
-    h, model = model3(X_train, Y_train, encoder_0, encoder_1, get_history=True, verbose=verbose)
+    encoded_X, encoder_0 = model1(X_train, param_reg=param_reg)
+    encoder_1 = model2(encoder_0, encoded_X, X_train, param_reg=param_reg)
+    h, model = model3(X_train, Y_train, encoder_0, encoder_1, param_reg=param_reg, 
+        init=init_3, get_history=True, verbose=verbose)
     if not X_to_pred:
         X_to_pred = X_train
     contours = model.predict(X_to_pred)

@@ -144,11 +144,12 @@ def conformity_coefficient(X, Y):
     if dice_metric(X,Y) !=0:
         return (3*dice_metric(X,Y)-2)/dice_metric(X,Y)
 
-def stats_results(Y_true, Y_pred, idx=None):
+def stats_results(Y_true, Y_pred, idx=None, print_=False):
     """
     DM and CC for the whole dataset. If one index is passed, return DM and CC for this index
     :param Y_true: True labels (Y_train)
     :param Y_pred: Prediction (binarys)
+    :param print_: Boolean to print stats
     :return: DM and CC arrays
     """
     dm_tot = np.array([dice_metric(Y_true[k].reshape((64,64)), Y_pred[k]) for k in range(len(Y_true))])
@@ -160,6 +161,7 @@ def stats_results(Y_true, Y_pred, idx=None):
                 idx, dice_metric(Y_true[idx].reshape((64,64)), Y_pred[idx]),
                 conformity_coefficient(Y_true[idx].reshape((64,64)), Y_pred[idx])))
 
-    print('For the full dataset :\nDice Metric : %.2f\nConformity Coefficient : %.2f' % (
-                                        dm_tot.mean(),cc_tot.mean()))
+    if print_:
+        print('For the full dataset :\nDice Metric : %.2f\nConformity Coefficient : %.2f' % (
+                                            dm_tot.mean(),cc_tot.mean()))
     return dm_tot, cc_tot
