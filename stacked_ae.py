@@ -109,7 +109,7 @@ def model3(X_train, Y_train, encoder_0, encoder_1, init, param_reg,
     else:
         return model
 
-def run(X_fullsize, y_pred, contour_mask, X_to_pred=None, verbose=0, param_reg=3*0.001, init_3='zero'):
+def run(X_fullsize, y_pred, contour_mask, X_to_pred=None, verbose=0, param_reg=3*0.001, init_3='zero',history=False):
     """
     Full pipeline for CNN: load the dataset, train the model and predict ROIs
     :param X_fullsize: full size training set (256x256)
@@ -127,4 +127,7 @@ def run(X_fullsize, y_pred, contour_mask, X_to_pred=None, verbose=0, param_reg=3
         X_to_pred = X_train
     contours = model.predict(X_to_pred)
     binarys = np.array([cv2.threshold(contour, 0, 1, cv2.INTERSECT_NONE)[1].reshape((64,64)) for contour in contours])
-    return X_train, Y_train, binarys
+    if history:
+        return X_train, Y_train, binarys, h 
+    else:
+        return X_train, Y_train, binarys
