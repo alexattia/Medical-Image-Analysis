@@ -74,7 +74,18 @@ def create_model_deeper(activation, input_shape=(64, 64)):
     model.add(Reshape([-1, 32, 32]))
     return model
 
-def training(m, X, Y, verbose, batch_size=16, epochs=10, data_augm=False):
+def create_model_full(activation, input_shape=(64, 64)):
+    model = Sequential()
+    model.add(Conv2D(64, (11,11), activation=activation, padding='valid', strides=(1, 1), input_shape=(input_shape[0], input_shape[1], 1)))
+    model.add(MaxPooling2D((2,2)))
+    model.add(Conv2D(128, (10, 10), activation=activation, padding='valid', strides=(1, 1)))
+    model.add(MaxPooling2D((2,2)))
+    model.add(Reshape([-1, 128*9*9]))
+    model.add(Dense(1024, activation='sigmoid', kernel_regularizer=regularizers.l2(0.0001)))
+    model.add(Reshape([-1, 32, 32]))
+    return model
+
+def training(m, X, Y, verbose, batch_size=16, epochs=20, data_augm=False):
     """
     Training CNN with the possibility to use data augmentation
     :param m: Keras model
@@ -103,9 +114,9 @@ def training(m, X, Y, verbose, batch_size=16, epochs=10, data_augm=False):
                                     verbose=verbose)         
     else:
         history = m.fit(X, Y, batch_size=batch_size, epochs=epochs, verbose=verbose)
-    return history
+    return history, m
 
-def run(model='simple', X_to_pred=None, history=False, verbose=0, activation=None, epochs=20):
+def run(model='simple', X_to_pred=None, history=False, verbose=0, activation=None, epochs=20, data_augm=False):
     """
     Full pipeline for CNN: load the dataset, train the model and predict ROIs
     :param model: choice between different models e.g simple, larger, deeper, maxpooling
@@ -124,6 +135,8 @@ def run(model='simple', X_to_pred=None, history=False, verbose=0, activation=Non
         m = create_model_deeper(activation=activation)
     elif model == 'maxpooling':
         m = create_model_maxpooling(activation=activation)
+    elif model =='full':
+        m = create_model_full(activation=activation)
 
     m.compile(loss='mean_squared_error',
               optimizer='adam',
@@ -132,14 +145,18 @@ def run(model='simple', X_to_pred=None, history=False, verbose=0, activation=Non
         print('Size for each layer :\nLayer, Input Size, Output Size')
         for p in m.layers:
             print(p.name.title(), p.input_shape, p.output_shape)
-    h = training(m, X, Y, verbose=verbose, batch_size=16, epochs=epochs, data_augm=False)
+    h, m = training(m, X, Y, verbose=verbose, batch_size=16, epochs=epochs, data_augm=data_augm)
 
     if not X_to_pred:
         X_to_pred = X
     y_pred = m.predict(X_to_pred, batch_size=16)
     
     if history:
-        return X, X_fullsize, Y, contour_mask, y_pred, h 
+        return X, X_fullsize, Y, contour_mask, y_pred, h, m
     else:
-        return X, X_fullsize, Y, contour_mask, y_pred
+        return X, X_fullsize, Y, contour_mask, y_pred, m
 
+def inference(model):
+    X_test, X_fullsize_test, Y_test, contour_mask_test = create_dataset(n_set='test')
+    y_pred = model.predict(X_test, batch_size=16)
+    return X_test, X_fullsize_test, Y_test, contour_mask_test, y_pred

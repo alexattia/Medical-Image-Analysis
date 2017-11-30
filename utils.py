@@ -4,6 +4,7 @@ import json
 import numpy as np
 from matplotlib.path import Path
 import dicom
+from sklearn.utils import shuffle
 import cv2
 
 def get_roi(image, contour, shape_out = 32):
@@ -25,7 +26,7 @@ def get_roi(image, contour, shape_out = 32):
         mask_roi[int(Y_min):int(Y_max), int(X_min - (h-w)/2):int(X_max + (h -w)/2)] = 1.0
     return cv2.resize(mask_roi, (shape_out, shape_out), interpolation = cv2.INTER_NEAREST)
 
-def create_dataset(image_shape=64, original_image_shape=256, 
+def create_dataset(image_shape=64, n_set='train', original_image_shape=256, 
                    roi_shape=32, data_path='./Data/'):
     """
     Creating the dataset from the images and the contour for the CNN.
@@ -35,14 +36,21 @@ def create_dataset(image_shape=64, original_image_shape=256,
     :param data_path: path for the dataset
     :return: correct size image dataset, full size image dataset, label (contours) dataset
     """
+    
+    if n_set == 'train':
+        number_set = 3
+        name_set = 'Training'
+    elif n_set == 'test':
+        number_set = 1
+        name_set = 'Online'         
     # Create dataset
-    series = json.load(open('series_case.json')) 
+    series = json.load(open('series_case.json'))[n_set]
     images, images_fullsize, contours, contour_mask = [], [], [], []
     # Loop over the series
     for case, serie in series.items():
-        image_path_base = data_path + 'challenge_training/%s/IM-%s' % (case, serie)
-        contour_path_base = data_path + 'Sunnybrook Cardiac MR Database ContoursPart3/\
-TrainingDataContours/%s/contours-manual/IRCCI-expert/' % case
+        image_path_base = data_path + 'challenge_%s/%s/IM-%s' % (name_set.lower(),case, serie)
+        contour_path_base = data_path + 'Sunnybrook Cardiac MR Database ContoursPart%s/\
+%sDataContours/%s/contours-manual/IRCCI-expert/' % (number_set, name_set, case)
         contours_list = glob.glob(contour_path_base + '*')
         contours_list_series = [k.split('/')[7].split('-')[2] for k in contours_list]
         # Loop over the contours/images
@@ -81,7 +89,7 @@ TrainingDataContours/%s/contours-manual/IRCCI-expert/' % case
     X = np.reshape(np.array(images), [len(images), image_shape, image_shape, 1])
     Y = np.reshape(np.array(contours), [len(contours), 1, roi_shape, roi_shape])
     print('Dataset shape :', X.shape, Y.shape)
-    return X, X_fullsize, Y, contour_mask
+    return shuffle(X, X_fullsize, Y, contour_mask, random_state=0)
 
 def compute_roi_pred(X_fullsize, y_pred, contour_mask, idx, roi_shape=32):
     """
