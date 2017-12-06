@@ -12,4 +12,4 @@ Manual segmentation of the Left Ventricle (LV) is a tedious and meticulous task 
 4. [Test and metrics](https://github.com/alexattia/Medical-Image-Analysis/blob/master/Test%20and%20Metrics.ipynb)
 
 ### Paper review
-For the Introduction to Medical Image Analysis course (MVA 2017-2018), we ([Sharone Dayan](https://github.com/SharoneDayan) and Alexandre Attia) have written a [NIPS format paper review](https://github.com/alexattia/Medical-Image-Analysis/blob/master/Paper_review.pdf)
+For the course of Introduction to Medical Image Analysis (MVA 2017-2018), we ([Sharone Dayan](https://github.com/SharoneDayan) and Alexandre Attia) have written a [NIPS format paper review](https://github.com/alexattia/Medical-Image-Analysis/blob/master/Paper_review.pdf) and [presented](https://github.com/alexattia/Medical-Image-Analysis/blob/master/Presentation.pdf) its content.
